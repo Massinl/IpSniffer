@@ -1,0 +1,19 @@
+QWidget {
+    background-color: #121212;
+    color: #eaeaea;
+    font-size: 13px;
+}
+
+QTableView {
+    gridline-color: #2a2a2a;
+    selection-background-color: #1e90ff;
+    selection-color: white;
+    alternate-background-color: #1a1a1a;
+}
+
+QHeaderView::section {
+    background-color: #1f1f1f;
+    padding: 6px;
+    border: 1px solid #2a2a2a;
+    font-weight: bold;
+}
