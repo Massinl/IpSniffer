@@ -5,11 +5,18 @@ from PySide6.QtWidgets import (
     QTableView,
     QVBoxLayout,
     QHBoxLayout,
-    QPushButton
+    QPushButton,
+    QLineEdit
+)
+from PySide6.QtCore import (
+    QSortFilterProxyModel, 
+    Qt
 )
 
 from models.packets import PacketModel
 from workers.packet_worker import PacketWorker
+from models.packet_filter_proxy import PacketFilterProxy
+
 
 
 class MainWindow(QWidget):
@@ -23,7 +30,11 @@ class MainWindow(QWidget):
         # table model
         self.table = QTableView()
         self.model = PacketModel()
-        self.table.setModel(self.model)
+        
+        self.proxy = PacketFilterProxy(self)
+        self.proxy.setSourceModel(self.model)
+        self.table.setModel(self.proxy)
+
 
         self.table.setSelectionBehavior(QTableView.SelectRows)
         self.table.setAlternatingRowColors(True)
@@ -41,6 +52,13 @@ class MainWindow(QWidget):
         self.stop_btn.clicked.connect(self.stop_capture)
         self.clear_btn.clicked.connect(self.clear_table)
         
+        #seacrh bar
+        self.search_bar = QLineEdit()
+        self.search_bar.setPlaceholderText("Search IP...")
+        
+        self.search_bar.textChanged.connect(
+            self.proxy.setFilterFixedString
+        )
 
         # Layout
         btn_layout = QHBoxLayout()
@@ -51,6 +69,8 @@ class MainWindow(QWidget):
         layout = QVBoxLayout(self)
         layout.addLayout(btn_layout)
         layout.addWidget(self.table)
+        layout.addWidget(self.search_bar)
+        self.setLayout(layout)
 
         # Worker
         self.worker = PacketWorker()
