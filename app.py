@@ -1,56 +1,70 @@
 import sys
-from PySide6.QtWidgets import QApplication, QWidget, QTableView, QVBoxLayout
-from PySide6.QtCore import QAbstractTableModel, Qt
+from PySide6.QtWidgets import (
+    QApplication,
+    QWidget,
+    QTableView,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton
+)
 
-
-class TableModel(QAbstractTableModel):
-    def __init__(self):
-        super().__init__()
-        self.headers = ["Source IP", "Destination IP", "Protocol"]
-
-    def rowCount(self, parent=None):
-        return 0
-
-    def columnCount(self, parent=None):
-        return len(self.headers)
-
-    def data(self, index, role=Qt.DisplayRole):
-        return None
-
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return self.headers[section]
-        return None
+from models.packets import PacketModel
+from workers.packet_worker import PacketWorker
 
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("QTableView Base")
+        self.setWindowTitle("IP Monitor")
         self.resize(700, 400)
 
+        # Table
         self.table = QTableView()
-        self.model = TableModel()
+
+        # Model
+        self.model = PacketModel()
         self.table.setModel(self.model)
 
-        # DO NOT enable sorting yet
         self.table.setSelectionBehavior(QTableView.SelectRows)
         self.table.setAlternatingRowColors(True)
         self.table.horizontalHeader().setStretchLastSection(True)
 
-        layout = QVBoxLayout()
+        # Buttons
+        self.start_btn = QPushButton("Start")
+        self.stop_btn = QPushButton("Stop")
+        self.stop_btn.setEnabled(False)
+
+        self.start_btn.clicked.connect(self.start_capture)
+        self.stop_btn.clicked.connect(self.stop_capture)
+
+        # Layout
+        btn_layout = QHBoxLayout()
+        btn_layout.addWidget(self.start_btn)
+        btn_layout.addWidget(self.stop_btn)
+
+        layout = QVBoxLayout(self)
+        layout.addLayout(btn_layout)
         layout.addWidget(self.table)
-        self.setLayout(layout)
 
-        self.load_styles()
+        # Worker
+        self.worker = PacketWorker()
+        self.worker.packet_captured.connect(self.on_packet)
 
-    def load_styles(self):
-        try:
-            with open("style.qss", "r") as f:
-                self.setStyleSheet(f.read())
-        except FileNotFoundError:
-            pass
+    def start_capture(self):
+        if not self.worker.isRunning():
+            self.worker.start()
+            self.start_btn.setEnabled(False)
+            self.stop_btn.setEnabled(True)
+
+    def stop_capture(self):
+        if self.worker.isRunning():
+            self.worker.stop()
+            self.start_btn.setEnabled(True)
+            self.stop_btn.setEnabled(False)
+
+    def on_packet(self, src_ip, dst_ip, proto):
+        self.model.add_row(src_ip, dst_ip, proto)
 
 
 if __name__ == "__main__":
