@@ -33,15 +33,19 @@ class MainWindow(QWidget):
         # Buttons
         self.start_btn = QPushButton("Start")
         self.stop_btn = QPushButton("Stop")
+        self.clear_btn = QPushButton("Clear")
         self.stop_btn.setEnabled(False)
+        self.clear_btn.setEnabled(False)
 
         self.start_btn.clicked.connect(self.start_capture)
         self.stop_btn.clicked.connect(self.stop_capture)
+        self.clear_btn.clicked.connect(self.clear_table)
 
         # Layout
         btn_layout = QHBoxLayout()
         btn_layout.addWidget(self.start_btn)
         btn_layout.addWidget(self.stop_btn)
+        btn_layout.addWidget(self.clear_btn)
 
         layout = QVBoxLayout(self)
         layout.addLayout(btn_layout)
@@ -56,12 +60,19 @@ class MainWindow(QWidget):
             self.worker.start()
             self.start_btn.setEnabled(False)
             self.stop_btn.setEnabled(True)
+            self.clear_btn.setEnabled(True)
 
     def stop_capture(self):
         if self.worker.isRunning():
             self.worker.stop()
             self.start_btn.setEnabled(True)
             self.stop_btn.setEnabled(False)
+            
+    def clear_table(self):
+        self.model.beginResetModel()
+        self.model.rows.clear()
+        self.model.endResetModel()
+        self.clear_btn.setEnabled(False)
 
     def on_packet(self, src_ip, dst_ip, proto):
         self.model.add_row(src_ip, dst_ip, proto)
