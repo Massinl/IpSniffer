@@ -1,32 +1,43 @@
-import time
-import random
 from PySide6.QtCore import QThread, Signal
+from scapy.all import sniff, IP, TCP, UDP, ICMP
 
 
 class PacketWorker(QThread):
     packet_captured = Signal(str, str, str)
 
-    def __init__(self):
+    def __init__(self, iface=None):
         super().__init__()
         self.running = False
+        self.iface = iface  # e.g. "en0"
 
     def run(self):
         self.running = True
-        protocols = ["TCP", "UDP", "ICMP"]
 
-        while self.running:
-            src_ip = f"192.168.1.{random.randint(1, 254)}"
-            dst_ip = random.choice(["8.8.8.8", "1.1.1.1", "224.0.0.1"])
-            proto = random.choice(protocols)
+        sniff(
+            iface=self.iface,
+            prn=self.process_packet,
+            store=False,
+            stop_filter=lambda _: not self.running
+        )
 
-            self.packet_captured.emit(src_ip, dst_ip, proto)
-            
-            
-        # --DONT PUT THIS TOO LOW OR IT WILL FLOOD YOUR PC AND CRASH ---
-            time.sleep(0.5)
-        # --------------------------------------------------------------
-        
-        
+    def process_packet(self, packet):
+        if IP not in packet:
+            return
+
+        src_ip = packet[IP].src
+        dst_ip = packet[IP].dst
+
+        if TCP in packet:
+            proto = "TCP"
+        elif UDP in packet:
+            proto = "UDP"
+        elif ICMP in packet:
+            proto = "ICMP"
+        else:
+            proto = "OTHER"
+
+        self.packet_captured.emit(src_ip, dst_ip, proto)
+
     def stop(self):
         self.running = False
         self.wait()

@@ -18,11 +18,10 @@ class MainWindow(QWidget):
 
         self.setWindowTitle("IP Monitor")
         self.resize(700, 400)
-
-        # Table
+        self.setMinimumSize(500, 300)
+        
+        # table model
         self.table = QTableView()
-
-        # Model
         self.model = PacketModel()
         self.table.setModel(self.model)
 
@@ -34,12 +33,14 @@ class MainWindow(QWidget):
         self.start_btn = QPushButton("Start")
         self.stop_btn = QPushButton("Stop")
         self.clear_btn = QPushButton("Clear")
+        
         self.stop_btn.setEnabled(False)
         self.clear_btn.setEnabled(False)
 
         self.start_btn.clicked.connect(self.start_capture)
         self.stop_btn.clicked.connect(self.stop_capture)
         self.clear_btn.clicked.connect(self.clear_table)
+        
 
         # Layout
         btn_layout = QHBoxLayout()
@@ -53,7 +54,9 @@ class MainWindow(QWidget):
 
         # Worker
         self.worker = PacketWorker()
+        self.worker = PacketWorker(iface="en0") # Need to add a selected interface for this
         self.worker.packet_captured.connect(self.on_packet)
+        
 
     def start_capture(self):
         if not self.worker.isRunning():
